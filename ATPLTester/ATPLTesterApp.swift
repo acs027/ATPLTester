@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct ATPLTesterApp: App {
@@ -13,5 +14,6 @@ struct ATPLTesterApp: App {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(for: [Question.self, Exam.self])
     }
 }
