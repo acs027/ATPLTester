@@ -16,6 +16,7 @@ struct QuestionView: View {
             Text(question.text)
                 .bold()
                 .font(.title2)
+                .minimumScaleFactor(0.7)
             optionView(key: "A", text: question.optionA)
             optionView(key: "B", text: question.optionB)
             optionView(key: "C", text: question.optionC)
@@ -31,6 +32,7 @@ struct QuestionView: View {
                 .bold()
             Text(text)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 15)
@@ -38,6 +40,7 @@ struct QuestionView: View {
         )
         .onTapGesture {
             function(key == "A" ? 1 : key == "B" ? 2 : key == "C" ? 3 : 4)
+            print(question.id)
         }
     }
 }

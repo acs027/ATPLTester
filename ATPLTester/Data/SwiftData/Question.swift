@@ -21,7 +21,7 @@ final class Question {
     var subjectID: Int
     var figureID: String // "nil" for question without figures
     var userDidFail: Bool
-    var userHaveSeen: Bool
+    var userHaveSeen: Int
     var hide: Bool
     
     init(id: Int,
@@ -34,8 +34,8 @@ final class Question {
          source: String,
          subjectID: Int,
          figureID: String = "nil",
-         userDidFail: Bool = true,
-         userHaveSeen: Bool = false,
+         userDidFail: Bool = false,
+         userHaveSeen: Int = 0,
          hide: Bool = false
     ) {
         self.id = id

@@ -11,38 +11,86 @@ import SwiftData
 struct LessonView: View {
     @State var vm = LessonViewModel()
     @Environment(\.modelContext) var modelContext
-    let lessonID: Int
+    @State var isCreateViewShowing = false
+    var lessonID: Int
     
     var body: some View {
-        Button {
-            createExam()
-        } label: {
-            Text("Create Exam")
-        }
-        List(vm.exams, id:\.id) { exam in
-            NavigationLink {
-                ExamView(vm: ExamViewModel(exam: exam))
-            } label: {
-                Text("\(exam.id)")
+        VStack{
+            if vm.isCreatingExam {
+                ProgressView()
+            } else {
+                examList
             }
+            showSheetButton
         }
         .onChange(of: vm.isCreatingExam) { oldValue, newValue in
             print(newValue)
         }
         .onAppear {
-            loadData()
+            if vm.exams.isEmpty {
+                fetchExams()
+            }
+        }
+        .sheet(isPresented: $isCreateViewShowing) {
+            CreateExamView(questionCount: $vm.questionCount, createExam: createExam)
+                .presentationDetents([.medium])
         }
     }
     
-    func createExam() {
-        print(vm.questions.count)
-        print(vm.exams.count)
-        vm.createExam(context: modelContext, subjectID: lessonID, questionCount: 10)
+    private var showSheetButton: some View {
+        Button {
+            showSheet()
+        } label: {
+            RoundedRectangle(cornerRadius: 15)
+                .foregroundStyle(.gray)
+                .frame(height: 50)
+                .overlay {
+                    Text("Create Exam")
+                        .bold()
+                        .font(.headline)
+                        .tint(.primary)
+                }
+                .padding()
+        }
     }
     
-    func loadData() {
-        vm.loadQuestions(context: modelContext, lessonID: lessonID)
-        vm.loadExams(context: modelContext, lessonID: lessonID)
+    private var examList: some View {
+        List {
+            ForEach(vm.exams, id: \.id) { exam in
+                NavigationLink {
+                    ExamView(vm: ExamViewModel(exam: exam))
+                } label: {
+                    VStack(alignment: .leading) {
+                        Text("\(exam.userAnswers.count): Question")
+                            .bold()
+                        Text("Correct: \(exam.correctCount)")
+                        Text("False: \(exam.wrongCount)")
+                        Text("Progress: \(exam.lastSessionQuestionIndex + 1) / \(exam.userAnswers.count)")
+                    }
+                }
+            }
+            .onDelete { indexSet in
+                print(indexSet)
+                delete(at: indexSet)
+            }
+        }
+    }
+    
+    private func delete(at offsets: IndexSet) {
+        vm.delete(at: offsets, context: modelContext, subjectId: lessonID)
+    }
+    
+    private func showSheet() {
+        isCreateViewShowing = true
+    }
+    
+    private func createExam() {
+        vm.createExam(context: modelContext, subjectID: lessonID)
+        isCreateViewShowing = false
+    }
+    
+    private func fetchExams() {
+        vm.fetchLessonExams(context: modelContext, lessonID: lessonID)
     }
 }
 

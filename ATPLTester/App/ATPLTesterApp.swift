@@ -12,8 +12,8 @@ import SwiftData
 struct ATPLTesterApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainView()
         }
-        .modelContainer(for: [Question.self, Exam.self])
+        .modelContainer(for: [Question.self, Exam.self, UserAnswer.self])
     }
 }
