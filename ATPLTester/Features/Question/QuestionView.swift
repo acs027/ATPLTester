@@ -1,0 +1,63 @@
+//
+//  SwiftUIView.swift
+//  ATPLTester
+//
+//  Created by ali cihan on 16.04.2025.
+//
+
+import SwiftUI
+
+struct QuestionView: View {
+    var question: Question
+    let function: (Int) -> Void
+    @State private var isFigureSheetShowing = false
+    
+    var body: some View {
+        VStack(alignment: .leading) {
+            if question.figureID != "0" {
+                Image(question.figureID)
+                    .resizable()
+                    .scaledToFit()
+                    .onTapGesture {
+                        isFigureSheetShowing.toggle()
+                    }
+            }
+            Text(question.text)
+                .bold()
+                .font(.title2)
+                .minimumScaleFactor(0.7)
+            optionView(key: "A", text: question.optionA)
+            optionView(key: "B", text: question.optionB)
+            optionView(key: "C", text: question.optionC)
+            optionView(key: "D", text: question.optionD)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding()
+        .sheet(isPresented: $isFigureSheetShowing) {
+            FigureView(figureID: question.figureID)
+        }
+    }
+    
+    func optionView(key: String, text: String) -> some View {
+        HStack() {
+            Text("\(key).")
+                .bold()
+            Text(text)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 15)
+                .stroke(lineWidth: 1)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 15))
+        .onTapGesture {
+            function(key == "A" ? 1 : key == "B" ? 2 : key == "C" ? 3 : 4)
+            print(question.id)
+        }
+    }
+}
+
+//#Preview {
+//    QuestionView(question: Question(id: 1, text: "Lorem ipsum", optionA: "A", optionB: "B", optionC: "C", optionD: "D", correctAnswer: 1, source: "Bristol", subjectID: 21))
+//}
