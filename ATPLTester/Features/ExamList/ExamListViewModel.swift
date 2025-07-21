@@ -9,7 +9,7 @@ import Foundation
 import SwiftData
 
 @Observable
-class LessonViewModel {
+class ExamListViewModel {
     var isCreatingExam: Bool = false
     var exams: [Exam] = []
     let dataManager = DataManager.shared
@@ -26,8 +26,9 @@ class LessonViewModel {
     ) {
         isCreatingExam = true
         dataManager.createExam(context: context, subjectID: subjectID, questionCount: questionCount, questionSource: sources) { [weak self] in
-            self?.fetchLessonExams(context: context, lessonID: subjectID)
-            self?.isCreatingExam = false
+            guard let self = self else { return }
+            self.fetchLessonExams(context: context, lessonID: subjectID)
+            self.isCreatingExam = false
         }
     }
     
@@ -38,4 +39,6 @@ class LessonViewModel {
             self?.fetchLessonExams(context: context, lessonID: subjectId)
         }
     }
+    
+    
 }

@@ -22,33 +22,43 @@ class ExamViewModel {
     
     func resetExam() {
         exam.userAnswers.shuffle()
-        exam.wrongCount = 0
+        
+        exam.falseCount = 0
         exam.correctCount = 0
         exam.lastSessionQuestionIndex = 0
         questionIndex = 0
         exam.isDone = false
+        
+        synchronizeQuestionOrder()
+    }
+    
+    private func synchronizeQuestionOrder() {
+        let questionDict = Dictionary(uniqueKeysWithValues: questions.map { ($0.id, $0)})
+        questions = exam.userAnswers.compactMap({ userAnswer in
+            questionDict[userAnswer.questionID]
+        })
     }
     
     func markQuestionAsSeen() {
         exam.lastSessionQuestionIndex = questionIndex
-        if questionIndex < exam.userAnswers.count {
-            let questionID = exam.userAnswers[questionIndex].questionID
-            if let question = questions.first(where: {$0.id == questionID}) {
-                question.userHaveSeen += 1
-            }
+        if questionIndex < questions.count {
+            questions[questionIndex].userHaveSeen += 1
         }
     }
     
     func checkAnswer(userAnswer: Int, question: Question) {
+        // Update exam statistics
         if question.correctAnswer == userAnswer {
             exam.correctCount += 1
         } else {
-            exam.wrongCount += 1
+            exam.falseCount += 1
             question.userDidFail = true
         }
-        if let questionUserAnswer = exam.userAnswers.first(where: {$0.questionID == question.id}) {
-            questionUserAnswer.userAnswer = userAnswer
+        
+        if let index = exam.userAnswers.firstIndex(where: { $0.questionID == question.id }) {
+            exam.userAnswers[index].userAnswer = userAnswer
         }
+        
         nextQuestion()
     }
     
@@ -64,9 +74,14 @@ class ExamViewModel {
     }
     
     func markAsHidden() {
-        let questionID = exam.userAnswers[questionIndex].questionID
-        let question = questions.first(where: {$0.id == questionID})
-        question?.isHidden = true
+//        let questionID = exam.userAnswers[questionIndex].questionID
+//        // More efficient lookup using index instead of first(where:)
+//        if let index = questions.firstIndex(where: { $0.id == questionID }) {
+//            questions[index].isHidden = true
+//        }
+        if questionIndex < questions.count {
+            questions[questionIndex].isHidden = true
+        }
     }
     
     func saveContext(context: ModelContext) {
@@ -75,10 +90,15 @@ class ExamViewModel {
     
     func getQuestions(context: ModelContext) {
         questions = dataManager.getQuestions(context: context, exam: exam)
+        
+        synchronizeQuestionOrder()
     }
     
     func getQuestion() -> Question? {
-        let userAnswer = exam.userAnswers[questionIndex]
-        return questions.first(where: {$0.id == userAnswer.questionID})
+//        let userAnswer = exam.userAnswers[questionIndex]
+//        return questions.first(where: {$0.id == userAnswer.questionID})
+        
+        guard questionIndex < questions.count else { return nil }
+        return questions[questionIndex]
     }
 }

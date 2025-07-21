@@ -23,8 +23,15 @@ class DataManager {
             },
             sortBy: [SortDescriptor(\.lastSession, order: .reverse)]
         )
-        print("exams loaded")
-        return (try? context.fetch(examFetch)) ?? []
+        
+        do {
+            let exams = try context.fetch(examFetch)
+            print("✅ \(exams.count) exams loaded for lesson \(lessonID)")
+            return exams
+        } catch {
+            print("❌ Failed to fetch exams: \(error)")
+            return []
+        }
     }
     
     func fetchedLessonQuestions(context: ModelContext, lessonID: Int, questionCount: Int) -> [Question] {
@@ -36,8 +43,15 @@ class DataManager {
             sortBy: [SortDescriptor(\.userHaveSeen, order: .forward)]
         )
         questionFetch.fetchLimit = questionCount
-        print("questions loaded")
-        return (try? context.fetch(questionFetch)) ?? []
+        
+        do {
+            let questions = try context.fetch(questionFetch)
+            print("✅ \(questions.count) questions loaded for lesson \(lessonID)")
+            return questions
+        } catch {
+            print("❌ Failed to fetch questions: \(error)")
+            return []
+        }
     }
     
     func createExam(
@@ -45,47 +59,115 @@ class DataManager {
         subjectID: Int,
         questionCount: Int,
         questionSource: [QuestionSource],
-        completion: () -> ()
+        completion: @escaping () -> ()
     ) {
         let questions = fetchedLessonQuestions(context: context, lessonID: subjectID, questionCount: questionCount)
-        if questions.count < questionCount { return }
+        
+        guard questions.count >= questionCount else {
+            print("❌ Insufficient questions: \(questions.count)/\(questionCount)")
+            completion()
+            return
+        }
+        
         let examID = UUID()
-        let userAnswers = questions.map {
+        
+        // Use more efficient array creation
+        let userAnswers = questions.prefix(questionCount).map {
             UserAnswer(examID: examID, questionID: $0.id, userAnswer: -1)
         }
-        let newExam = Exam(id: examID, correctCount: 0, wrongCount: 0, questionTime: 30, subjectID: subjectID, lastSession: Date.now, userAnswers: userAnswers)
         
-        print(newExam)
+        let newExam = Exam(
+            id: examID,
+            correctCount: 0,
+            falseCount: 0,
+            questionTime: 30,
+            subjectID: subjectID,
+            lastSession: Date.now,
+            userAnswers: Array(userAnswers)
+        )
+        
         context.insert(newExam)
-        saveContext(context: context)
-        completion()
+        
+        do {
+            try context.save()
+            print("✅ Exam created with \(userAnswers.count) questions")
+            completion()
+        } catch {
+            print("❌ Failed to create exam: \(error)")
+            completion()
+        }
     }
     
-    func deleteExam(context: ModelContext, examID: UUID, completion: () -> ()) {
+    func deleteExam(context: ModelContext, examID: UUID, completion: @escaping () -> ()) {
         let examFetch = FetchDescriptor<Exam>(predicate: #Predicate {
             $0.id == examID
         })
-        guard let exam = try? context.fetch(examFetch).first else { return }
-        context.delete(exam)
-        debugPrint("exam deleted")
-        saveContext(context: context)
-        completion()
+        
+        do {
+            guard let exam = try context.fetch(examFetch).first else {
+                print("❌ Exam not found for deletion: \(examID)")
+                completion()
+                return
+            }
+            
+            context.delete(exam)
+            try context.save()
+            print("✅ Exam deleted successfully")
+            completion()
+        } catch {
+            print("❌ Failed to delete exam: \(error)")
+            completion()
+        }
     }
     
     func saveContext(context: ModelContext) {
         do {
             try context.save()
-            debugPrint("saved")
+            print("✅ Context saved successfully")
         } catch {
-            debugPrint("failed to save")
+            print("❌ Failed to save context: \(error)")
         }
     }
     
     func getQuestions(context: ModelContext, exam: Exam) -> [Question] {
         let questionIDs = exam.userAnswers.map { $0.questionID }
-            let descriptor = FetchDescriptor<Question>(
-                predicate: #Predicate { questionIDs.contains($0.id) }
-            )
-            return (try? context.fetch(descriptor)) ?? []
+        let descriptor = FetchDescriptor<Question>(
+            predicate: #Predicate { questionIDs.contains($0.id) }
+        )
+        
+        do {
+            let questions = try context.fetch(descriptor)
+            print("✅ \(questions.count) questions loaded for exam")
+            return questions
+        } catch {
+            print("❌ Failed to fetch exam questions: \(error)")
+            return []
+        }
+    }
+    
+    func getLessonQuestionCount(context: ModelContext, lessonID: Int) -> Int {
+        let descriptor = FetchDescriptor<Question>(
+            predicate: #Predicate { $0.subjectID == lessonID }
+        )
+        
+        do {
+            let questionsCount = try context.fetchCount(descriptor)
+            return questionsCount
+        } catch {
+            return 0
+        }
+    }
+    
+    func getLessonUnseenQuestionCount(context: ModelContext, lessonID: Int) -> Int {
+        let descriptor = FetchDescriptor<Question>(
+            predicate: #Predicate { $0.subjectID == lessonID && $0.userHaveSeen == 0 }
+        )
+        
+        do {
+            let questionsCount = try context.fetchCount(descriptor)
+            return questionsCount
+        } catch {
+            return 0
+        }
     }
 }

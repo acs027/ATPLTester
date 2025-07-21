@@ -72,31 +72,47 @@ struct QuestionData: Codable, Identifiable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
-        id = Int(try container.decode(String.self, forKey: .id)) ?? 0
-        orjID = Int(try container.decode(String.self, forKey: .orjID)) ?? 0
+        // Optimized string-to-int conversions with better error handling
+        id = Self.safeIntConversion(try container.decode(String.self, forKey: .id))
+        orjID = Self.safeIntConversion(try container.decode(String.self, forKey: .orjID))
         source = try container.decode(String.self, forKey: .source)
-        subjectID = Int(try container.decode(String.self, forKey: .subjectID)) ?? 0
+        subjectID = Self.safeIntConversion(try container.decode(String.self, forKey: .subjectID))
         question = try container.decode(String.self, forKey: .question)
         optionA = try container.decode(String.self, forKey: .optionA)
         optionB = try container.decode(String.self, forKey: .optionB)
         optionC = try container.decode(String.self, forKey: .optionC)
         optionD = try container.decode(String.self, forKey: .optionD)
-        correctAnswer = Int(try container.decodeIfPresent(String.self, forKey: .correctAnswer) ?? "0") ?? 0
-        figure = try container.decode(String.self, forKey: .figure)
-        hasInfo = try container.decode(String.self, forKey: .hasInfo).uppercased() == "True"
-        group = Int(try container.decodeIfPresent(String.self, forKey: .group) ?? "0") ?? 0
-        tryCount = Int(try container.decode(String.self, forKey: .tryCount)) ?? 0
-        correctCount = Int(try container.decode(String.self, forKey: .correctCount)) ?? 0
-        isDeleted = try container.decode(String.self, forKey: .isDeleted).uppercased() == "TRUE"
-        dontShow = try container.decodeIfPresent(String.self, forKey: .dontShow)?.uppercased() == "TRUE"
-        isFlagged = try container.decode(String.self, forKey: .isFlagged).uppercased() == "TRUE"
-        userInfo = Int(try container.decode(String.self, forKey: .userInfo)) ?? 0
-        lastAnswer = try container.decode(String.self, forKey: .lastAnswer).uppercased() == "TRUE"
-        isHidden = try container.decode(String.self, forKey: .isHidden).uppercased() == "TRUE"
-        translatedQuestion = try container.decode(String.self, forKey: .translatedQuestion)
-        translatedA = try container.decode(String.self, forKey: .translatedA)
-        translatedB = try container.decode(String.self, forKey: .translatedB)
-        translatedC = try container.decode(String.self, forKey: .translatedC)
-        translatedD = try container.decode(String.self, forKey: .translatedD)
+        correctAnswer = Self.safeIntConversion(try container.decodeIfPresent(String.self, forKey: .correctAnswer) ?? "0")
+        figure = try container.decodeIfPresent(String.self, forKey: .figure)
+        
+        // Optimized boolean conversions
+        hasInfo = Self.safeBoolConversion(try container.decodeIfPresent(String.self, forKey: .hasInfo))
+        group = Self.safeIntConversion(try container.decodeIfPresent(String.self, forKey: .group) ?? "0")
+        tryCount = Self.safeIntConversion(try container.decodeIfPresent(String.self, forKey: .tryCount) ?? "0")
+        correctCount = Self.safeIntConversion(try container.decodeIfPresent(String.self, forKey: .correctCount) ?? "0")
+        isDeleted = Self.safeBoolConversion(try container.decodeIfPresent(String.self, forKey: .isDeleted))
+        dontShow = Self.safeBoolConversion(try container.decodeIfPresent(String.self, forKey: .dontShow))
+        isFlagged = Self.safeBoolConversion(try container.decodeIfPresent(String.self, forKey: .isFlagged))
+        userInfo = Self.safeIntConversion(try container.decodeIfPresent(String.self, forKey: .userInfo) ?? "0")
+        lastAnswer = Self.safeBoolConversion(try container.decodeIfPresent(String.self, forKey: .lastAnswer))
+        isHidden = Self.safeBoolConversion(try container.decodeIfPresent(String.self, forKey: .isHidden))
+        
+        // Optional translations
+        translatedQuestion = try container.decodeIfPresent(String.self, forKey: .translatedQuestion)
+        translatedA = try container.decodeIfPresent(String.self, forKey: .translatedA)
+        translatedB = try container.decodeIfPresent(String.self, forKey: .translatedB)
+        translatedC = try container.decodeIfPresent(String.self, forKey: .translatedC)
+        translatedD = try container.decodeIfPresent(String.self, forKey: .translatedD)
+    }
+    
+    // MARK: - Performance Helper Methods
+    private static func safeIntConversion(_ string: String?) -> Int {
+        guard let string = string, !string.isEmpty else { return 0 }
+        return Int(string) ?? 0
+    }
+    
+    private static func safeBoolConversion(_ string: String?) -> Bool? {
+        guard let string = string, !string.isEmpty else { return nil }
+        return string.lowercased() == "true"
     }
 }

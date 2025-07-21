@@ -28,6 +28,8 @@ struct ReviewView: View {
     }
 }
 
-//#Preview {
-//    ReviewView()
-//}
+#Preview {
+    let question = [Question(id: 1, text: "a", optionA: "a", optionB: "b", optionC: "c", optionD: "d", correctAnswer: 1, source: "a", subjectID: 1)]
+    let userAnswer = [UserAnswer(examID: UUID(), questionID: 1, userAnswer: 1)]
+    ReviewView(examQuestions: question, userAnswers: userAnswer)
+}

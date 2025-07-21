@@ -10,59 +10,90 @@ import SwiftData
 
 struct ExamView: View {
     @State var vm: ExamViewModel
-    @Environment(\.modelContext) var modelContext
-    
+    @Environment(\.modelContext) private var modelContext
+
     var body: some View {
-        Group{
+        Group {
             if vm.questions.isEmpty {
-                ProgressView()
-            }
-            else {
-                VStack {
-                    if !vm.exam.isDone,
-                       let question = vm.getQuestion() {
-                        QuestionView(question: question) { answerIndex in
-                            vm.checkAnswer(userAnswer: answerIndex, question: question)
-                        }
-                        .id(question.id)
-                        .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
-                        .animation(.easeInOut, value: vm.questionIndex)
-                    } else {
-                        VStack {
-                            ReviewListView(examQuestions: vm.questions, userAnswers: vm.exam.userAnswers)
-                        }
-                    }
-                }
+                ProgressView("Loading questions...")
+                    .padding()
+            } else {
+                content
             }
         }
-        .navigationTitle(
-            !vm.exam.isDone ? Text("\(vm.questionIndex + 1) / \(vm.exam.userAnswers.count)") :
-                Text("C: \(vm.exam.correctCount) F: \(vm.exam.wrongCount)")
-        )
+        .navigationTitle(navigationTitle)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 questionMenu
             }
         }
-        .onAppear {
-            vm.getQuestions(context: modelContext)
-            if let url = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
-                print("📁 SwiftData location: \(url.path)")
+        .onAppear(perform: onAppear)
+        .onDisappear(perform: onDisappear)
+    }
+
+    // MARK: - Content View
+
+    private var content: some View {
+        VStack {
+            if !vm.exam.isDone,
+               let question = vm.getQuestion() {
+                QuestionView(question: question) { answerIndex in
+                    vm.checkAnswer(userAnswer: answerIndex, question: question)
+                }
+                .id(question.id)
+                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
+                .animation(.easeInOut, value: vm.questionIndex)
+            } else {
+                reviewView
             }
         }
-        .onDisappear {
-            vm.saveContext(context: modelContext)
+        .padding(.horizontal)
+    }
+
+    // MARK: - Review
+
+    private var reviewView: some View {
+        ReviewListView(examQuestions: vm.questions,
+                       userAnswers: vm.exam.userAnswers)
+    }
+
+    // MARK: - Navigation Title
+
+    private var navigationTitle: Text {
+        if vm.exam.isDone {
+            return Text("C: \(vm.exam.correctCount)  F: \(vm.exam.falseCount)")
+        } else {
+            return Text("\(vm.questionIndex + 1) / \(vm.exam.userAnswers.count)")
         }
     }
-    
-    var questionMenu: some View {
-        Menu("Help") {
-            Button("Hide question") {
+
+    // MARK: - Toolbar Menu
+
+    private var questionMenu: some View {
+        Menu {
+            Button("Hide this question") {
                 vm.markAsHidden()
             }
-            Button("Bug report") {
-                
+            Button("Report a bug") {
+                // Placeholder for bug report logic
             }
+        } label: {
+            Label("Options", systemImage: "ellipsis.circle")
         }
+    }
+
+    // MARK: - Lifecycle
+
+    private func onAppear() {
+        vm.getQuestions(context: modelContext)
+        #if DEBUG
+        if let url = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+            print("📁 SwiftData location: \(url.path)")
+        }
+        #endif
+    }
+
+    private func onDisappear() {
+        vm.saveContext(context: modelContext)
     }
 }

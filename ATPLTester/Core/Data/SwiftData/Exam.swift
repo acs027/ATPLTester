@@ -13,7 +13,7 @@ final class Exam {
     @Attribute(.unique) var id: UUID
 //    var questions: [Question]
     var correctCount: Int
-    var wrongCount: Int
+    var falseCount: Int
     var questionTime: Int
     var subjectID: Int
     var lastSession: Date
@@ -22,12 +22,12 @@ final class Exam {
     @Relationship(deleteRule: .cascade)
     var userAnswers: [UserAnswer] // [questionID:answerValue]
     
-    init(id: UUID, correctCount: Int, wrongCount: Int, questionTime: Int, subjectID: Int, lastSession: Date,
+    init(id: UUID, correctCount: Int, falseCount: Int, questionTime: Int, subjectID: Int, lastSession: Date,
          lastSessionQuestionIndex: Int = 0, isDone: Bool = false,
          userAnswers: [UserAnswer] = []) {
         self.id = id
         self.correctCount = correctCount
-        self.wrongCount = wrongCount
+        self.falseCount = falseCount
         self.questionTime = questionTime
         self.subjectID = subjectID
         self.lastSession = lastSession
